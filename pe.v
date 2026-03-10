@@ -5,84 +5,73 @@ module pe (
     input [7:0] b_in,
     output reg [7:0] a_out,
     output reg [7:0] b_out,
-    output reg [15:0] acc
+    output reg [15:0] acc,
+    output wire skip_flag,
+    output wire reuse_flag
 );
-
-wire [7:0] a_iso;
-wire [7:0] b_iso;
-wire [15:0] mult_new;
-wire [15:0] mult;
 
 reg [7:0] prev_a;
 reg [7:0] prev_b;
 reg [15:0] prev_mult;
 
-reg [31:0] skip_count;
-reg [31:0] reuse_count;
+// -----------------------------
+// 1. Operand Isolation
+// -----------------------------
+wire skip_mac = (a_in == 0 || b_in == 0);
+wire same_operands = (a_in == prev_a) && (b_in == prev_b);
 
-wire same_operands;
-wire skip_mac;
+assign skip_flag = skip_mac;
+assign reuse_flag = same_operands;
+
+// CRITICAL: Clamp inputs to 0 so the multiplier gates stop toggling!
+wire [7:0] a_iso = skip_mac ? 8'd0 : a_in;
+wire [7:0] b_iso = skip_mac ? 8'd0 : b_in;
+wire [15:0] mult_new = a_iso * b_iso;
+wire [15:0] mult = same_operands ? prev_mult : mult_new;
+
+// -----------------------------
+// 2. Integrated Clock Gating (ICG)
+// -----------------------------
+// THE FIX: Force enable_mac HIGH if reset is active! 
+// This allows the clock edge to reach the registers so they can clear to 0.
+wire enable_mac = (!skip_mac) || reset; 
+reg cg_latch;
+
+always @(clk or enable_mac) begin
+    if (!clk) cg_latch <= enable_mac;
+end
+wire mac_clk = clk & cg_latch;
 
 
 // -----------------------------
-// Operand Isolation
+// 3. Sequential Logic
 // -----------------------------
-assign skip_mac = (a_in == 0 || b_in == 0);
 
-assign a_iso = skip_mac ? 8'd0 : a_in;
-assign b_iso = skip_mac ? 8'd0 : b_in;
-
-
-// -----------------------------
-// Temporal Reuse
-// -----------------------------
-assign same_operands = (a_in == prev_a) && (b_in == prev_b);
-
-assign mult_new = a_iso * b_iso;
-
-assign mult = same_operands ? prev_mult : mult_new;
-
-
-// -----------------------------
-// Sequential Logic
-// -----------------------------
+// Domain 1: Continuous Clock (Data forwarding)
 always @(posedge clk) begin
-
     if(reset) begin
         a_out <= 0;
         b_out <= 0;
-        acc <= 0;
+    end
+    else begin
+        a_out <= a_in;
+        b_out <= b_in;
+    end
+end
 
+// Domain 2: Gated Clock (Zero sequential power when idle!)
+always @(posedge mac_clk) begin // Now uses the gated clock safely
+    if(reset) begin
+        acc <= 0;
         prev_a <= 0;
         prev_b <= 0;
         prev_mult <= 0;
-
-        skip_count <= 0;
-        reuse_count <= 0;
     end
-
     else begin
-
-        // forward operands
-        a_out <= a_in;
-        b_out <= b_in;
-
-        // accumulate
         acc <= acc + mult;
-
-        // update cache
         prev_a <= a_in;
         prev_b <= b_in;
         prev_mult <= mult;
-
-        // skip counter
-        if(skip_mac)
-            skip_count <= skip_count + 1;
-
-        // reuse counter
-        if(same_operands)
-            reuse_count <= reuse_count + 1;
-
     end
 end
 
