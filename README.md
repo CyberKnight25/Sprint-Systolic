@@ -1,4 +1,4 @@
-# ⚡ Power-Aware INT8 Systolic Array Accelerator
+# Power-Aware INT8 Systolic Array Accelerator
 
 
 
@@ -7,7 +7,7 @@ This repository contains a highly optimized, sparsity-aware 4x4 INT8 Systolic Ar
 
 Unlike standard matrix multipliers, this architecture explicitly attacks both combinational toggling and sequential clock-tree power waste. It features real-time, hardware-level performance monitoring and is fully verified for synthesis and power extraction in EDA tools like Cadence Genus.
 
-## 🚀 Architectural Innovations
+##  Architectural Innovations
 
 To maximize power efficiency, this design implements aggressive RTL-level gating techniques at both the micro and macro levels:
 
@@ -23,7 +23,7 @@ To maximize power efficiency, this design implements aggressive RTL-level gating
 * `pe_tb.v` - The dual-phase testbench that injects a staggered diagonal data wavefront.
 * `systolic_power_activity.vcd` - The generated Value Change Dump (VCD) file containing the exact switching activity of the hardware during dense and sparse workloads. 
 
-## 📊 Verification & Synthesis
+##  Verification & Synthesis
 
 The testbench is designed to simulate a real-world SoC memory bus, pushing dense matrices followed by high-sparsity matrices. During verification, the array successfully executed mathematical operations with 100% accuracy while dynamically logging hundreds of clock-gated zero-skips during the sparse phase. 
 
