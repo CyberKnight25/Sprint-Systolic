@@ -60,35 +60,41 @@ reset=0;
 // 2 1 1 3
 // 0 2 3 1
 
+// feed diagonally safely with non-blocking assignments
 @(posedge clk)
-a0=1; a1=0; a2=0; a3=0;
-b0=1; b1=0; b2=0; b3=0;
-
-@(posedge clk)
-a0=2; a1=5; a2=0; a3=0;
-b0=3; b1=2; b2=0; b3=0;
+a0<=1; a1<=0; a2<=0; a3<=0;
+b0<=1; b1<=0; b2<=0; b3<=0;
 
 @(posedge clk)
-a0=3; a1=6; a2=2; a3=0;
-b0=2; b1=1; b2=0; b3=0;
+a0<=2; a1<=5; a2<=0; a3<=0;
+b0<=3; b1<=2; b2<=0; b3<=0;
 
 @(posedge clk)
-a0=4; a1=7; a2=1; a3=4;
-b0=0; b1=1; b2=2; b3=1;
+a0<=3; a1<=6; a2<=2; a3<=0;
+b0<=2; b1<=1; b2<=0; b3<=0;
 
 @(posedge clk)
-a0=0; a1=8; a2=3; a3=2;
-b0=0; b1=2; b2=1; b3=3;
+a0<=4; a1<=7; a2<=1; a3<=4;
+b0<=0; b1<=1; b2<=2; b3<=1;
 
 @(posedge clk)
-a0=0; a1=0; a2=2; a3=1;
-b0=0; b1=0; b2=3; b3=1;
+a0<=0; a1<=8; a2<=3; a3<=2;
+b0<=0; b1<=2; b2<=1; b3<=0; // Fixed b1
 
 @(posedge clk)
-a0=0; a1=0; a2=0; a3=3;
-b0=0; b1=0; b2=0; b3=1;
+a0<=0; a1<=0; a2<=2; a3<=1;
+b0<=0; b1<=0; b2<=3; b3<=3; // Fixed b2
 
+@(posedge clk)
+a0<=0; a1<=0; a2<=0; a3<=3;
+b0<=0; b1<=0; b2<=0; b3<=1;
 
+@(posedge clk) // Explicitly push zeros to prevent over-accumulation
+a0<=0; a1<=0; a2<=0; a3<=0;
+b0<=0; b1<=0; b2<=0; b3<=0;
+
+// flush pipeline
+repeat(20) @(posedge clk);
 // flush pipeline
 repeat(20) @(posedge clk);
 $display("A Matrix:");
